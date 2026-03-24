@@ -82,6 +82,12 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 
+    @PutMapping("/users/{userId}/toggle-active")
+    public ResponseEntity<UserResponse> toggleActive(@PathVariable UUID userId,
+                                                     @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(userService.toggleActive(userId, currentUser));
+    }
+
     // ═══════════════════════════════════════════
     //  HOSTEL MANAGEMENT
     // ═══════════════════════════════════════════

@@ -28,6 +28,7 @@ public class StudentController {
     private final CloudinaryService cloudinaryService;
     private final CategoryService categoryService;
     private final UserService userService;
+    private final HostelService hostelService;
 
     // ═══════════════════════════════════════════
     //  PROFILE
@@ -159,5 +160,26 @@ public class StudentController {
     public ResponseEntity<FeedbackResponse> getFeedback(@PathVariable UUID complaintId,
                                                         @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(feedbackService.getFeedbackByComplaintId(complaintId, currentUser));
+    }
+
+    // ═══════════════════════════════════════════
+    //  COMPLAINT COUNTS
+    // ═══════════════════════════════════════════
+
+    @GetMapping("/complaints/count")
+    public ResponseEntity<ComplaintCountResponse> getComplaintCounts(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(complaintService.getStudentComplaintCounts(currentUser));
+    }
+
+    // ═══════════════════════════════════════════
+    //  HOSTEL
+    // ═══════════════════════════════════════════
+
+    @GetMapping("/hostel")
+    public ResponseEntity<HostelResponse> getMyHostel(@AuthenticationPrincipal User currentUser) {
+        if (currentUser.getHostel() == null) {
+            throw new RuntimeException("Student is not assigned to a hostel");
+        }
+        return ResponseEntity.ok(hostelService.getHostelById(currentUser.getHostel().getId()));
     }
 }

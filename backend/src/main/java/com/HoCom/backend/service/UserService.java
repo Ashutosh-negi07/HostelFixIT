@@ -21,4 +21,6 @@ public interface UserService {
     UserResponse updateUser(UUID userId, UpdateUserRequest request, User currentUser);
 
     void deleteUser(UUID userId, User currentUser);
+
+    UserResponse toggleActive(UUID userId, User admin);
 }

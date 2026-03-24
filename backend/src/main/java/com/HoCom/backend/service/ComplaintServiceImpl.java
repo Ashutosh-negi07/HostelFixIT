@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.HoCom.backend.dto.ComplaintCountResponse;
 import com.HoCom.backend.dto.ComplaintResponse;
 import com.HoCom.backend.dto.CreateComplaintRequest;
 import com.HoCom.backend.dto.PagedResponse;
@@ -32,6 +33,8 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final ComplaintStatusHistoryRepository statusHistoryRepository;
+    private final NotificationService notificationService;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     public ComplaintResponse createComplaint(CreateComplaintRequest request, User student) {
@@ -55,6 +58,15 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .build();
 
         Complaint saved = complaintRepository.save(complaint);
+
+        // Notify wardens of this hostel about the new complaint
+        userRepository.findByHostelIdAndRole(saved.getHostel().getId(), Role.WARDEN,
+                PageRequest.of(0, 100)).getContent()
+                .forEach(warden -> notificationService.notify(warden,
+                        "New Complaint Filed",
+                        "A new " + saved.getPriority() + " priority complaint has been filed by " + student.getName(),
+                        saved.getId(), "COMPLAINT"));
+
         return mapToResponse(saved);
     }
 
@@ -84,6 +96,10 @@ public class ComplaintServiceImpl implements ComplaintService {
             complaint.setCategory(category);
         }
         if (photoUrl != null) {
+            // Delete the old photo from Cloudinary before replacing it
+            if (complaint.getPhotoUrl() != null) {
+                cloudinaryService.delete(complaint.getPhotoUrl());
+            }
             complaint.setPhotoUrl(photoUrl);
         }
 
@@ -103,6 +119,11 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         if (complaint.getStatus() != Complaint.Status.PENDING) {
             throw new RuntimeException("Only PENDING complaints can be cancelled");
+        }
+
+        // Delete the photo from Cloudinary before removing the complaint
+        if (complaint.getPhotoUrl() != null) {
+            cloudinaryService.delete(complaint.getPhotoUrl());
         }
 
         complaintRepository.delete(complaint);
@@ -202,6 +223,18 @@ public class ComplaintServiceImpl implements ComplaintService {
         Complaint saved = complaintRepository.save(complaint);
         recordStatusChange(saved, oldStatus, Complaint.Status.ASSIGNED, warden);
 
+        // Notify student that their complaint was assigned
+        notificationService.notify(saved.getStudent(),
+                "Complaint Assigned",
+                "Your complaint has been assigned to " + worker.getName(),
+                saved.getId(), "COMPLAINT");
+
+        // Notify worker about the new assignment
+        notificationService.notify(worker,
+                "New Assignment",
+                "You have been assigned a new complaint: " + saved.getDescription().substring(0, Math.min(saved.getDescription().length(), 80)),
+                saved.getId(), "COMPLAINT");
+
         return mapToResponse(saved);
     }
 
@@ -228,6 +261,12 @@ public class ComplaintServiceImpl implements ComplaintService {
         Complaint saved = complaintRepository.save(complaint);
         recordStatusChange(saved, oldStatus, Complaint.Status.RESOLVED, worker);
 
+        // Notify student that their complaint was resolved
+        notificationService.notify(saved.getStudent(),
+                "Complaint Resolved",
+                "Your complaint has been resolved. Please provide feedback!",
+                saved.getId(), "COMPLAINT");
+
         return mapToResponse(saved);
     }
 
@@ -252,6 +291,12 @@ public class ComplaintServiceImpl implements ComplaintService {
         Complaint saved = complaintRepository.save(complaint);
         recordStatusChange(saved, oldStatus, Complaint.Status.IN_PROGRESS, worker);
 
+        // Notify student that work has started
+        notificationService.notify(saved.getStudent(),
+                "Work Started",
+                "Work has started on your complaint",
+                saved.getId(), "COMPLAINT");
+
         return mapToResponse(saved);
     }
 
@@ -272,6 +317,66 @@ public class ComplaintServiceImpl implements ComplaintService {
         Complaint saved = complaintRepository.save(complaint);
         recordStatusChange(saved, oldStatus, Complaint.Status.REJECTED, warden);
 
+        // Notify student that their complaint was rejected
+        notificationService.notify(saved.getStudent(),
+                "Complaint Rejected",
+                "Your complaint has been rejected by the warden",
+                saved.getId(), "COMPLAINT");
+
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public ComplaintResponse reassignWorker(UUID complaintId, UUID newWorkerId, User warden) {
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+
+        // Warden can only manage complaints in their hostel
+        if (warden.getHostel() == null
+                || !complaint.getHostel().getId().equals(warden.getHostel().getId())) {
+            throw new RuntimeException("You can only manage complaints in your hostel");
+        }
+
+        // Can only reassign if complaint has been assigned before
+        if (complaint.getStatus() != Complaint.Status.ASSIGNED
+                && complaint.getStatus() != Complaint.Status.IN_PROGRESS) {
+            throw new RuntimeException("Can only reassign complaints that are ASSIGNED or IN_PROGRESS");
+        }
+
+        User newWorker = userRepository.findById(newWorkerId)
+                .orElseThrow(() -> new RuntimeException("Worker not found"));
+
+        if (newWorker.getRole() != Role.WORKER) {
+            throw new RuntimeException("Assigned user must have WORKER role");
+        }
+
+        User oldWorker = complaint.getAssignedWorker();
+        complaint.setAssignedWorker(newWorker);
+        complaint.setStatus(Complaint.Status.ASSIGNED);
+
+        Complaint saved = complaintRepository.save(complaint);
+
+        // Notify old worker about removal
+        if (oldWorker != null) {
+            notificationService.notify(oldWorker,
+                    "Assignment Removed",
+                    "You have been removed from a complaint assignment",
+                    saved.getId(), "COMPLAINT");
+        }
+
+        // Notify student about reassignment
+        notificationService.notify(saved.getStudent(),
+                "Complaint Reassigned",
+                "Your complaint has been reassigned to " + newWorker.getName(),
+                saved.getId(), "COMPLAINT");
+
+        // Notify new worker about the assignment
+        notificationService.notify(newWorker,
+                "New Assignment",
+                "You have been assigned a complaint: " + saved.getDescription().substring(0, Math.min(saved.getDescription().length(), 80)),
+                saved.getId(), "COMPLAINT");
+
         return mapToResponse(saved);
     }
 
@@ -284,6 +389,32 @@ public class ComplaintServiceImpl implements ComplaintService {
                 pageable);
 
         return toPagedResponse(complaints);
+    }
+
+    @Override
+    public ComplaintCountResponse getStudentComplaintCounts(User student) {
+        UUID studentId = student.getId();
+        return ComplaintCountResponse.builder()
+                .pending(complaintRepository.countByStudentIdAndStatus(studentId, Complaint.Status.PENDING))
+                .assigned(complaintRepository.countByStudentIdAndStatus(studentId, Complaint.Status.ASSIGNED))
+                .inProgress(complaintRepository.countByStudentIdAndStatus(studentId, Complaint.Status.IN_PROGRESS))
+                .resolved(complaintRepository.countByStudentIdAndStatus(studentId, Complaint.Status.RESOLVED))
+                .rejected(complaintRepository.countByStudentIdAndStatus(studentId, Complaint.Status.REJECTED))
+                .total(complaintRepository.countByStudentId(studentId))
+                .build();
+    }
+
+    @Override
+    public ComplaintCountResponse getWorkerComplaintCounts(User worker) {
+        UUID workerId = worker.getId();
+        return ComplaintCountResponse.builder()
+                .pending(0) // Workers don't have pending complaints
+                .assigned(complaintRepository.countByAssignedWorkerIdAndStatus(workerId, Complaint.Status.ASSIGNED))
+                .inProgress(complaintRepository.countByAssignedWorkerIdAndStatus(workerId, Complaint.Status.IN_PROGRESS))
+                .resolved(complaintRepository.countByAssignedWorkerIdAndStatus(workerId, Complaint.Status.RESOLVED))
+                .rejected(0) // Workers' complaints aren't rejected to them
+                .total(complaintRepository.countByAssignedWorkerId(workerId))
+                .build();
     }
 
     // ─── Helpers ───

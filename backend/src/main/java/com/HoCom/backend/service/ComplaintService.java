@@ -2,6 +2,7 @@ package com.HoCom.backend.service;
 
 import java.util.UUID;
 
+import com.HoCom.backend.dto.ComplaintCountResponse;
 import com.HoCom.backend.dto.ComplaintResponse;
 import com.HoCom.backend.dto.CreateComplaintRequest;
 import com.HoCom.backend.dto.PagedResponse;
@@ -37,6 +38,12 @@ public interface ComplaintService {
 
     ComplaintResponse rejectComplaint(UUID complaintId, User warden);
 
+    ComplaintResponse reassignWorker(UUID complaintId, UUID newWorkerId, User warden);
+
     PagedResponse<ComplaintResponse> getAllComplaints(Complaint.Status status, Complaint.Priority priority,
                                                        UUID hostelId, String sortBy, String order, int page, int size);
+
+    ComplaintCountResponse getStudentComplaintCounts(User student);
+
+    ComplaintCountResponse getWorkerComplaintCounts(User worker);
 }

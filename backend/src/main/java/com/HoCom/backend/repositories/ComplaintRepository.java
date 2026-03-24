@@ -19,5 +19,15 @@ public interface ComplaintRepository extends JpaRepository<Complaint, UUID>, Jpa
 
     long countByHostelIdAndStatus(UUID hostelId, Status status);
 
+    // ─── Count methods for Student ───
 
+    long countByStudentId(UUID studentId);
+
+    long countByStudentIdAndStatus(UUID studentId, Status status);
+
+    // ─── Count methods for Worker ───
+
+    long countByAssignedWorkerId(UUID workerId);
+
+    long countByAssignedWorkerIdAndStatus(UUID workerId, Status status);
 }

@@ -103,6 +103,23 @@ public class UserServiceImpl implements UserService {
         userRepository.delete(target);
     }
 
+    @Override
+    public UserResponse toggleActive(UUID userId, User admin) {
+        if (admin.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Only ADMIN can toggle user active status");
+        }
+
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (target.getRole() == Role.ADMIN) {
+            throw new RuntimeException("Cannot toggle active status of another ADMIN");
+        }
+
+        target.setIsActive(!target.getIsActive());
+        return mapToResponse(userRepository.save(target));
+    }
+
     // ─── Helpers ───
 
     private void validatePermission(User actor, User target) {

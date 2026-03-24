@@ -34,6 +34,28 @@ public class WardenController {
     private final ComplaintStatusHistoryRepository statusHistoryRepository;
 
     // ═══════════════════════════════════════════
+    //  PROFILE
+    // ═══════════════════════════════════════════
+
+    @GetMapping("/profile")
+    public ResponseEntity<UserResponse> getProfile(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(userService.getUserById(currentUser.getId()));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<UserResponse> updateProfile(@Valid @RequestBody UpdateUserRequest request,
+                                                      @AuthenticationPrincipal User currentUser) {
+        // Wardens can only update their own name, phone, password — not role/hostel/isActive
+        UpdateUserRequest safeRequest = UpdateUserRequest.builder()
+                .name(request.getName())
+                .phone(request.getPhone())
+                .oldPassword(request.getOldPassword())
+                .password(request.getPassword())
+                .build();
+        return ResponseEntity.ok(userService.updateUser(currentUser.getId(), safeRequest, currentUser));
+    }
+
+    // ═══════════════════════════════════════════
     //  STUDENT & WORKER MANAGEMENT
     // ═══════════════════════════════════════════
 
@@ -137,6 +159,16 @@ public class WardenController {
                                                           @Valid @RequestBody AssignWorkerRequest request,
                                                           @AuthenticationPrincipal User currentUser) {
         ComplaintResponse response = complaintService.assignWorker(complaintId, request.getWorkerId(), currentUser);
+        return ResponseEntity.ok(response);
+    }
+
+    // ─── Reassign worker to complaint ───
+
+    @PutMapping("/complaints/{complaintId}/reassign")
+    public ResponseEntity<ComplaintResponse> reassignWorker(@PathVariable UUID complaintId,
+                                                            @Valid @RequestBody AssignWorkerRequest request,
+                                                            @AuthenticationPrincipal User currentUser) {
+        ComplaintResponse response = complaintService.reassignWorker(complaintId, request.getWorkerId(), currentUser);
         return ResponseEntity.ok(response);
     }
 
