@@ -52,15 +52,17 @@ export function getInitials(name = "") {
 
 /** Role colour for sidebar accent */
 export const ROLE_COLORS = {
-  STUDENT: "#6366f1",
-  WARDEN:  "#8b5cf6",
-  WORKER:  "#06b6d4",
-  ADMIN:   "#f59e0b",
+  STUDENT:     "#6366f1",
+  WARDEN:      "#8b5cf6",
+  WORKER:      "#06b6d4",
+  ADMIN:       "#f59e0b",
+  SUPER_ADMIN: "#e11d48",
 };
 
 export const ROLE_LABELS = {
-  STUDENT: "Student",
-  WARDEN:  "Warden",
-  WORKER:  "Worker",
-  ADMIN:   "Admin",
+  STUDENT:     "Student",
+  WARDEN:      "Warden",
+  WORKER:      "Worker",
+  ADMIN:       "Admin",
+  SUPER_ADMIN: "Super Admin",
 };

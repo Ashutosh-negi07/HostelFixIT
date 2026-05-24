@@ -25,7 +25,7 @@ export default function AdminUsers() {
         ))}
       </div>
 
-      <UserManagementTable actorRole="ADMIN" targetRole={selectedRole || "STUDENT"} canCreate />
+      <UserManagementTable actorRole="ADMIN" targetRole={selectedRole} canCreate={!!selectedRole} />
     </div>
   );
 }

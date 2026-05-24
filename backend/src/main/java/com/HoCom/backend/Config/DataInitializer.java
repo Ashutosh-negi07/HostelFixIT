@@ -25,35 +25,53 @@ public class DataInitializer implements CommandLineRunner {
     @Value("${ADMIN_DEFAULT_PASSWORD:CHANGE_ME}")
     private String adminDefaultPassword;
 
+    @Value("${SUPER_ADMIN_DEFAULT_PASSWORD:CHANGE_ME}")
+    private String superAdminDefaultPassword;
+
     @Override
     public void run(String... args) {
-        String adminEmail = "admin@hocom.com";
 
+        // ── Seed ADMIN ───────────────────────────────────────────────────────
+        String adminEmail = "admin@hocom.com";
         User existingAdmin = userRepository.findByEmail(adminEmail).orElse(null);
         if (existingAdmin == null) {
-            User admin = User.builder()
+            userRepository.save(User.builder()
                     .name("admin")
                     .email(adminEmail)
                     .password(passwordEncoder.encode(adminDefaultPassword))
                     .role(Role.ADMIN)
                     .isActive(true)
-                    .build();
-
-            userRepository.save(admin);
-            System.out.println(">>> Default ADMIN user created — email: admin@hocom.com");
+                    .build());
+            System.out.println(">>> Default ADMIN user created — email: " + adminEmail);
         } else {
-            // Reset password to default for testing
             existingAdmin.setPassword(passwordEncoder.encode(adminDefaultPassword));
             userRepository.save(existingAdmin);
             System.out.println(">>> ADMIN password reset to default");
         }
 
-        // Seed default categories
+        // ── Seed SUPER_ADMIN ─────────────────────────────────────────────────
+        String superAdminEmail = "superadmin@hostelfixit.com";
+        User existingSuperAdmin = userRepository.findByEmail(superAdminEmail).orElse(null);
+        if (existingSuperAdmin == null) {
+            userRepository.save(User.builder()
+                    .name("Super Admin")
+                    .email(superAdminEmail)
+                    .password(passwordEncoder.encode(superAdminDefaultPassword))
+                    .role(Role.SUPER_ADMIN)
+                    .isActive(true)
+                    .build());
+            System.out.println(">>> SUPER_ADMIN created — email: " + superAdminEmail);
+        } else {
+            existingSuperAdmin.setPassword(passwordEncoder.encode(superAdminDefaultPassword));
+            userRepository.save(existingSuperAdmin);
+            System.out.println(">>> SUPER_ADMIN password reset to default");
+        }
+
+        // ── Seed default categories ───────────────────────────────────────────
         List<String> defaultCategories = List.of(
                 "Plumbing", "Electrical", "Cleaning", "Furniture",
                 "Internet", "Security", "Maintenance", "Other"
         );
-
         for (String catName : defaultCategories) {
             if (!categoryRepository.existsByName(catName)) {
                 categoryRepository.save(Category.builder().name(catName).build());

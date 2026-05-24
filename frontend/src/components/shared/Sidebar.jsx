@@ -30,6 +30,12 @@ const NAV_CONFIG = {
     { label: "Complaints",  href: "/admin/complaints",    icon: "📋" },
     { label: "Categories",  href: "/admin/categories",    icon: "🏷️" },
   ],
+  SUPER_ADMIN: [
+    { label: "Dashboard",   href: "/superadmin",          icon: "👑" },
+    { label: "Admins",      href: "/superadmin/admins",   icon: "🛡️" },
+    { label: "Hostels",     href: "/superadmin/hostels",  icon: "🏢" },
+    { label: "Profile",     href: "/superadmin/profile",  icon: "👤" },
+  ],
 };
 
 export default function Sidebar({ open, onClose }) {

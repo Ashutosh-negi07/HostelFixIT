@@ -25,6 +25,14 @@ public class Hostel {
     @Column
     private String address;
 
+    /**
+     * The ADMIN who owns this hostel.
+     * NULL = unassigned (visible only to SUPER_ADMIN).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_id")
+    private User admin;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

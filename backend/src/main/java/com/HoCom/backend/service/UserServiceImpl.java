@@ -105,15 +105,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse toggleActive(UUID userId, User admin) {
-        if (admin.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Only ADMIN can toggle user active status");
+        if (admin.getRole() != Role.ADMIN && admin.getRole() != Role.SUPER_ADMIN) {
+            throw new RuntimeException("Only ADMIN or SUPER_ADMIN can toggle user active status");
         }
 
         User target = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (target.getRole() == Role.ADMIN) {
-            throw new RuntimeException("Cannot toggle active status of another ADMIN");
+        // ADMIN cannot toggle another ADMIN or SUPER_ADMIN
+        if (admin.getRole() == Role.ADMIN &&
+                (target.getRole() == Role.ADMIN || target.getRole() == Role.SUPER_ADMIN)) {
+            throw new RuntimeException("ADMIN cannot toggle active status of another ADMIN or SUPER_ADMIN");
+        }
+        // SUPER_ADMIN cannot deactivate themselves
+        if (admin.getRole() == Role.SUPER_ADMIN && target.getRole() == Role.SUPER_ADMIN) {
+            throw new RuntimeException("Cannot toggle SUPER_ADMIN account");
         }
 
         target.setIsActive(!target.getIsActive());
@@ -123,7 +129,7 @@ public class UserServiceImpl implements UserService {
     // ─── Helpers ───
 
     private void validatePermission(User actor, User target) {
-        // Allow self-update (e.g., student updating own profile)
+        // Allow self-update
         if (actor.getId().equals(target.getId())) {
             return;
         }
@@ -131,9 +137,17 @@ public class UserServiceImpl implements UserService {
         Role actorRole = actor.getRole();
         Role targetRole = target.getRole();
 
+        if (actorRole == Role.SUPER_ADMIN) {
+            // SUPER_ADMIN can modify anyone except another SUPER_ADMIN
+            if (targetRole == Role.SUPER_ADMIN) {
+                throw new RuntimeException("Cannot modify SUPER_ADMIN account");
+            }
+            return;
+        }
+
         if (actorRole == Role.ADMIN) {
-            if (targetRole == Role.ADMIN) {
-                throw new RuntimeException("Cannot modify another ADMIN");
+            if (targetRole == Role.ADMIN || targetRole == Role.SUPER_ADMIN) {
+                throw new RuntimeException("Cannot modify ADMIN or SUPER_ADMIN");
             }
         } else if (actorRole == Role.WARDEN) {
             if (targetRole != Role.STUDENT && targetRole != Role.WORKER) {

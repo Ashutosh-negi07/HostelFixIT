@@ -59,12 +59,16 @@ public class AuthServiceImpl implements AuthService {
         Role creatorRole = createdBy.getRole();
         Role targetRole = request.getRole();
 
-        // ADMIN can create: WARDEN, STUDENT, WORKER
+        // SUPER_ADMIN can create: ADMIN, WARDEN, WORKER, STUDENT
+        // ADMIN can create: WARDEN, WORKER, STUDENT (not ADMIN or SUPER_ADMIN)
         // WARDEN can create: STUDENT, WORKER
-        // No one else can create users
-        if (creatorRole == Role.ADMIN) {
-            if (targetRole == Role.ADMIN) {
-                throw new RuntimeException("Cannot create another ADMIN");
+        if (creatorRole == Role.SUPER_ADMIN) {
+            if (targetRole == Role.SUPER_ADMIN) {
+                throw new RuntimeException("Cannot create another SUPER_ADMIN");
+            }
+        } else if (creatorRole == Role.ADMIN) {
+            if (targetRole == Role.ADMIN || targetRole == Role.SUPER_ADMIN) {
+                throw new RuntimeException("ADMIN cannot create another ADMIN or SUPER_ADMIN");
             }
         } else if (creatorRole == Role.WARDEN) {
             if (targetRole != Role.STUDENT && targetRole != Role.WORKER) {

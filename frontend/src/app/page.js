@@ -5,10 +5,11 @@ import { getUser } from "@/lib/auth";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
 const ROLE_ROUTES = {
-  ADMIN: "/admin",
-  WARDEN: "/warden",
-  STUDENT: "/student",
-  WORKER: "/worker",
+  ADMIN:       "/admin",
+  SUPER_ADMIN: "/superadmin",
+  WARDEN:      "/warden",
+  STUDENT:     "/student",
+  WORKER:      "/worker",
 };
 
 export default function RootPage() {

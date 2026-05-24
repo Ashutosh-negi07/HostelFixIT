@@ -5,8 +5,10 @@ import com.HoCom.backend.models.User.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,4 +28,16 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     long countByRole(Role role);
 
     long countByHostelIdAndRole(UUID hostelId, Role role);
+
+    // ─── Scoped queries for ADMIN (filter by their hostel IDs) ───
+
+    /** All non-ADMIN, non-SUPER_ADMIN users whose hostel is in the given list */
+    @Query("SELECT u FROM User u WHERE u.hostel.id IN :hostelIds AND u.role NOT IN ('ADMIN', 'SUPER_ADMIN')")
+    Page<User> findByHostelIdIn(List<UUID> hostelIds, Pageable pageable);
+
+    @Query("SELECT u FROM User u WHERE u.hostel.id IN :hostelIds AND u.role = :role")
+    Page<User> findByHostelIdInAndRole(List<UUID> hostelIds, Role role, Pageable pageable);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.hostel.id IN :hostelIds AND u.role = :role")
+    long countByHostelIdInAndRole(List<UUID> hostelIds, Role role);
 }
