@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.HoCom.backend.dto.PagedResponse;
 import com.HoCom.backend.dto.UpdateUserRequest;
@@ -14,9 +15,12 @@ import com.HoCom.backend.dto.UserResponse;
 import com.HoCom.backend.models.Hostel;
 import com.HoCom.backend.models.User;
 import com.HoCom.backend.models.User.Role;
+import com.HoCom.backend.repositories.ComplaintRepository;
 import com.HoCom.backend.repositories.HostelRepository;
+import com.HoCom.backend.repositories.NotificationRepository;
 import com.HoCom.backend.repositories.UserRepository;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -27,6 +31,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final HostelRepository hostelRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ComplaintRepository complaintRepository;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public UserResponse getUserById(UUID userId) {
@@ -47,6 +53,24 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<User> users = userRepository.findByRole(role, pageable);
         return toPagedResponse(users);
+    }
+
+    @Override
+    public PagedResponse<UserResponse> getScopedUsers(List<UUID> hostelIds, int page, int size) {
+        if (hostelIds == null || hostelIds.isEmpty()) {
+            return emptyPagedResponse(page, size);
+        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return toPagedResponse(userRepository.findByHostelIdIn(hostelIds, pageable));
+    }
+
+    @Override
+    public PagedResponse<UserResponse> getScopedUsersByRole(List<UUID> hostelIds, Role role, int page, int size) {
+        if (hostelIds == null || hostelIds.isEmpty()) {
+            return emptyPagedResponse(page, size);
+        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return toPagedResponse(userRepository.findByHostelIdInAndRole(hostelIds, role, pageable));
     }
 
     @Override
@@ -95,18 +119,56 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(UUID userId, User currentUser) {
         User target = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         validatePermission(currentUser, target);
+
+        // Block hard-delete if the user has complaint records — complaint history
+        // must be preserved for audit purposes. Use deactivate (toggle-active) instead.
+        long complaintCount = complaintRepository.countByStudentId(target.getId());
+        if (complaintCount > 0) {
+            throw new RuntimeException(
+                    "Cannot delete user with " + complaintCount + " existing complaint(s). "
+                    + "Deactivate the user account instead to preserve complaint history."
+            );
+        }
+
+        // Clean up notifications before deleting the user (FK: notifications.user_id)
+        notificationRepository.deleteByRecipientId(target.getId());
+
         userRepository.delete(target);
+    }
+
+    @Override
+    public UserResponse toggleActive(UUID userId, User admin) {
+        if (admin.getRole() != Role.ADMIN && admin.getRole() != Role.SUPER_ADMIN) {
+            throw new RuntimeException("Only ADMIN or SUPER_ADMIN can toggle user active status");
+        }
+
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // ADMIN cannot toggle another ADMIN or SUPER_ADMIN
+        if (admin.getRole() == Role.ADMIN &&
+                (target.getRole() == Role.ADMIN || target.getRole() == Role.SUPER_ADMIN)) {
+            throw new RuntimeException("ADMIN cannot toggle active status of another ADMIN or SUPER_ADMIN");
+        }
+        // SUPER_ADMIN cannot deactivate themselves
+        if (admin.getRole() == Role.SUPER_ADMIN && target.getRole() == Role.SUPER_ADMIN) {
+            throw new RuntimeException("Cannot toggle SUPER_ADMIN account");
+        }
+
+        target.setIsActive(!target.getIsActive());
+        return mapToResponse(userRepository.save(target));
     }
 
     // ─── Helpers ───
 
     private void validatePermission(User actor, User target) {
-        // Allow self-update (e.g., student updating own profile)
+        // Allow self-update
         if (actor.getId().equals(target.getId())) {
             return;
         }
@@ -114,9 +176,17 @@ public class UserServiceImpl implements UserService {
         Role actorRole = actor.getRole();
         Role targetRole = target.getRole();
 
+        if (actorRole == Role.SUPER_ADMIN) {
+            // SUPER_ADMIN can modify anyone except another SUPER_ADMIN
+            if (targetRole == Role.SUPER_ADMIN) {
+                throw new RuntimeException("Cannot modify SUPER_ADMIN account");
+            }
+            return;
+        }
+
         if (actorRole == Role.ADMIN) {
-            if (targetRole == Role.ADMIN) {
-                throw new RuntimeException("Cannot modify another ADMIN");
+            if (targetRole == Role.ADMIN || targetRole == Role.SUPER_ADMIN) {
+                throw new RuntimeException("Cannot modify ADMIN or SUPER_ADMIN");
             }
         } else if (actorRole == Role.WARDEN) {
             if (targetRole != Role.STUDENT && targetRole != Role.WORKER) {
@@ -154,6 +224,17 @@ public class UserServiceImpl implements UserService {
                 .totalElements(pageResult.getTotalElements())
                 .totalPages(pageResult.getTotalPages())
                 .last(pageResult.isLast())
+                .build();
+    }
+
+    private PagedResponse<UserResponse> emptyPagedResponse(int page, int size) {
+        return PagedResponse.<UserResponse>builder()
+                .content(List.of())
+                .page(page)
+                .size(size)
+                .totalElements(0)
+                .totalPages(0)
+                .last(true)
                 .build();
     }
 }

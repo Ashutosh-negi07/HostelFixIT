@@ -64,7 +64,8 @@ public class GlobalExceptionHandler {
             "Old password is required to change password",
             "Old password is incorrect",
             "Token has been invalidated",
-            "Upload failed"
+            "Upload failed",
+            "Notification not found"
     );
 
     @ExceptionHandler(RuntimeException.class)

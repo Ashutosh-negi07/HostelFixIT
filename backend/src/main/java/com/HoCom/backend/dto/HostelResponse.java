@@ -15,5 +15,13 @@ public class HostelResponse {
     private UUID id;
     private String name;
     private String address;
+    private UUID adminId;
+    private String adminName;
     private Instant createdAt;
+
+    // Aggregate counts shown on hostel cards
+    private long totalStudents;
+    private long totalWorkers;
+    private long totalComplaints;
 }
+

@@ -89,4 +89,13 @@ public class WorkerController {
                                                         @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(feedbackService.getFeedbackByComplaintId(complaintId, currentUser));
     }
+
+    // ═══════════════════════════════════════════
+    //  COMPLAINT COUNTS
+    // ═══════════════════════════════════════════
+
+    @GetMapping("/complaints/count")
+    public ResponseEntity<ComplaintCountResponse> getComplaintCounts(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(complaintService.getWorkerComplaintCounts(currentUser));
+    }
 }

@@ -65,6 +65,6 @@ public class User {
     }
 
     public enum Role {
-        STUDENT, WORKER, WARDEN, ADMIN
+        STUDENT, WORKER, WARDEN, ADMIN, SUPER_ADMIN
     }
 }

@@ -38,6 +38,28 @@ public class AdminController {
     private final ComplaintStatusHistoryRepository statusHistoryRepository;
 
     // ═══════════════════════════════════════════
+    //  PROFILE
+    // ═══════════════════════════════════════════
+
+    @GetMapping("/profile")
+    public ResponseEntity<UserResponse> getProfile(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(userService.getUserById(currentUser.getId()));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<UserResponse> updateProfile(@Valid @RequestBody UpdateUserRequest request,
+                                                      @AuthenticationPrincipal User currentUser) {
+        // Admins can only update their own name, phone, password — not role/hostel/isActive
+        UpdateUserRequest safeRequest = UpdateUserRequest.builder()
+                .name(request.getName())
+                .phone(request.getPhone())
+                .oldPassword(request.getOldPassword())
+                .password(request.getPassword())
+                .build();
+        return ResponseEntity.ok(userService.updateUser(currentUser.getId(), safeRequest, currentUser));
+    }
+
+    // ═══════════════════════════════════════════
     //  USER MANAGEMENT
     // ═══════════════════════════════════════════
 
@@ -48,24 +70,41 @@ public class AdminController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
     @GetMapping("/users")
     public ResponseEntity<PagedResponse<UserResponse>> getAllUsers(
+            @AuthenticationPrincipal User currentUser,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(userService.getAllUsers(page, size));
+        // ADMIN sees only users in their own hostels (no ADMIN/SUPER_ADMIN accounts)
+        List<UUID> hostelIds = hostelService.getScopedHostelIds(currentUser);
+        return ResponseEntity.ok(userService.getScopedUsers(hostelIds, page, size));
     }
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable UUID userId) {
-        return ResponseEntity.ok(userService.getUserById(userId));
+    public ResponseEntity<UserResponse> getUserById(@PathVariable UUID userId,
+                                                    @AuthenticationPrincipal User currentUser) {
+        UserResponse user = userService.getUserById(userId);
+        // ADMIN can only view users in their own hostels
+        List<UUID> hostelIds = hostelService.getScopedHostelIds(currentUser);
+        if (user.getHostelId() == null || !hostelIds.contains(user.getHostelId())) {
+            throw new RuntimeException("You do not have permission to view this user");
+        }
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping("/users/role/{role}")
     public ResponseEntity<PagedResponse<UserResponse>> getUsersByRole(
             @PathVariable Role role,
+            @AuthenticationPrincipal User currentUser,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(userService.getUsersByRole(role, page, size));
+        // ADMIN cannot query ADMIN or SUPER_ADMIN accounts
+        if (role == Role.ADMIN || role == Role.SUPER_ADMIN) {
+            throw new RuntimeException("Admins cannot query ADMIN or SUPER_ADMIN accounts");
+        }
+        List<UUID> hostelIds = hostelService.getScopedHostelIds(currentUser);
+        return ResponseEntity.ok(userService.getScopedUsersByRole(hostelIds, role, page, size));
     }
 
     @PutMapping("/users/{userId}")
@@ -82,6 +121,12 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 
+    @PutMapping("/users/{userId}/toggle-active")
+    public ResponseEntity<UserResponse> toggleActive(@PathVariable UUID userId,
+                                                     @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(userService.toggleActive(userId, currentUser));
+    }
+
     // ═══════════════════════════════════════════
     //  HOSTEL MANAGEMENT
     // ═══════════════════════════════════════════
@@ -89,15 +134,12 @@ public class AdminController {
     @PostMapping("/hostels")
     public ResponseEntity<HostelResponse> createHostel(@Valid @RequestBody CreateHostelRequest request,
                                                        @AuthenticationPrincipal User currentUser) {
-        if (currentUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Only ADMIN can create hostels");
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).body(hostelService.createHostel(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(hostelService.createHostel(request, currentUser));
     }
 
     @GetMapping("/hostels")
-    public ResponseEntity<List<HostelResponse>> getAllHostels() {
-        return ResponseEntity.ok(hostelService.getAllHostels());
+    public ResponseEntity<List<HostelResponse>> getAllHostels(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(hostelService.getScopedHostels(currentUser));
     }
 
     @GetMapping("/hostels/{hostelId}")
@@ -133,8 +175,12 @@ public class AdminController {
     public ResponseEntity<HostelResponse> updateHostel(@PathVariable UUID hostelId,
                                                        @Valid @RequestBody UpdateHostelRequest request,
                                                        @AuthenticationPrincipal User currentUser) {
-        if (currentUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Only ADMIN can update hostels");
+        // ADMIN can only update their own hostels; SUPER_ADMIN can update any
+        if (currentUser.getRole() == Role.ADMIN) {
+            List<UUID> myIds = hostelService.getScopedHostelIds(currentUser);
+            if (!myIds.contains(hostelId)) {
+                throw new RuntimeException("You do not have permission to update this hostel");
+            }
         }
         return ResponseEntity.ok(hostelService.updateHostel(hostelId, request));
     }
@@ -142,8 +188,12 @@ public class AdminController {
     @DeleteMapping("/hostels/{hostelId}")
     public ResponseEntity<Map<String, String>> deleteHostel(@PathVariable UUID hostelId,
                                                             @AuthenticationPrincipal User currentUser) {
-        if (currentUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Only ADMIN can delete hostels");
+        // ADMIN can only delete their own hostels; SUPER_ADMIN can delete any
+        if (currentUser.getRole() == Role.ADMIN) {
+            List<UUID> myIds = hostelService.getScopedHostelIds(currentUser);
+            if (!myIds.contains(hostelId)) {
+                throw new RuntimeException("You do not have permission to delete this hostel");
+            }
         }
         hostelService.deleteHostel(hostelId);
         return ResponseEntity.ok(Map.of("message", "Hostel deleted successfully"));
@@ -156,9 +206,7 @@ public class AdminController {
     @PostMapping("/categories")
     public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CreateCategoryRequest request,
                                                            @AuthenticationPrincipal User currentUser) {
-        if (currentUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Only ADMIN can create categories");
-        }
+        // Both ADMIN and SUPER_ADMIN can manage categories
         return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.createCategory(request));
     }
 
@@ -176,18 +224,12 @@ public class AdminController {
     public ResponseEntity<CategoryResponse> updateCategory(@PathVariable UUID categoryId,
                                                            @Valid @RequestBody UpdateCategoryRequest request,
                                                            @AuthenticationPrincipal User currentUser) {
-        if (currentUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Only ADMIN can update categories");
-        }
         return ResponseEntity.ok(categoryService.updateCategory(categoryId, request));
     }
 
     @DeleteMapping("/categories/{categoryId}")
     public ResponseEntity<Map<String, String>> deleteCategory(@PathVariable UUID categoryId,
                                                               @AuthenticationPrincipal User currentUser) {
-        if (currentUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("Only ADMIN can delete categories");
-        }
         categoryService.deleteCategory(categoryId);
         return ResponseEntity.ok(Map.of("message", "Category deleted successfully"));
     }

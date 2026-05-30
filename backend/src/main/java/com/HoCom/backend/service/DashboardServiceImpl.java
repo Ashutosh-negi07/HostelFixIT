@@ -53,6 +53,16 @@ public class DashboardServiceImpl implements DashboardService {
         usersByRole.put("WORKER", totalWorkers);
         usersByRole.put("WARDEN", totalWardens);
 
+        // Build category breakdown for bar chart
+        Map<String, Long> complaintsByCategory = new LinkedHashMap<>();
+        complaintRepository.countGroupByCategory()
+                .forEach(row -> complaintsByCategory.put((String) row[0], (Long) row[1]));
+
+        // Build hostel breakdown for bar chart
+        Map<String, Long> complaintsByHostel = new LinkedHashMap<>();
+        complaintRepository.countGroupByHostel()
+                .forEach(row -> complaintsByHostel.put((String) row[0], (Long) row[1]));
+
         return DashboardStatsResponse.builder()
                 .totalComplaints(totalComplaints)
                 .pendingComplaints(pendingComplaints)
@@ -67,8 +77,11 @@ public class DashboardServiceImpl implements DashboardService {
                 .averageRating(averageRating != null ? averageRating : 0.0)
                 .complaintsByStatus(complaintsByStatus)
                 .usersByRole(usersByRole)
+                .complaintsByCategory(complaintsByCategory)
+                .complaintsByHostel(complaintsByHostel)
                 .build();
     }
+
 
     @Override
     public DashboardStatsResponse getWardenDashboardStats(User warden) {
