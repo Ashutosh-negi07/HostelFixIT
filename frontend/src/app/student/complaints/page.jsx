@@ -8,13 +8,14 @@ import Pagination from "@/components/shared/Pagination";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import EmptyState from "@/components/shared/EmptyState";
 
-const STATUSES  = ["", "PENDING", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REJECTED"];
+const STATUSES   = ["", "PENDING", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REJECTED"];
 const PRIORITIES = ["", "LOW", "NORMAL", "HIGH"];
 
 export default function StudentComplaints() {
   const [complaints, setComplaints] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
   const [page, setPage]             = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal]           = useState(0);
@@ -22,6 +23,7 @@ export default function StudentComplaints() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = {
         page,
@@ -37,7 +39,8 @@ export default function StudentComplaints() {
       setTotalPages(data.totalPages || 0);
       setTotal(data.totalElements || 0);
     } catch (e) {
-      console.error(e);
+      console.error("Failed to load complaints:", e?.message || e);
+      setError("Could not load complaints. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -59,10 +62,12 @@ export default function StudentComplaints() {
       <div className="page-header">
         <div>
           <h1 className="page-title">My Complaints</h1>
-          <p className="page-subtitle">{total} total complaint{total !== 1 ? "s" : ""}</p>
+          <p className="page-subtitle">
+            {loading ? "Loading…" : `${total} total complaint${total !== 1 ? "s" : ""}`}
+          </p>
         </div>
         <Link href="/student/complaints/new" className="btn btn-primary">
-          ➕ New Complaint
+          + New Complaint
         </Link>
       </div>
 
@@ -114,10 +119,26 @@ export default function StudentComplaints() {
         )}
       </div>
 
-      {/* List */}
+      {/* Content */}
       {loading ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: "3rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", padding: "3rem" }}>
           <LoadingSpinner size="lg" />
+          <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
+            Loading your complaints… (this may take a moment)
+          </p>
+        </div>
+      ) : error ? (
+        <div style={{
+          padding: "2rem",
+          textAlign: "center",
+          background: "rgba(239,68,68,0.06)",
+          border: "1px solid rgba(239,68,68,0.15)",
+          borderRadius: 12,
+        }}>
+          <p style={{ color: "#ef4444", marginBottom: "1rem" }}>{error}</p>
+          <button className="btn btn-primary btn-sm" onClick={loadData}>
+            Retry
+          </button>
         </div>
       ) : complaints.length === 0 ? (
         <EmptyState

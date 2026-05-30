@@ -139,7 +139,7 @@ export default function StudentComplaintDetail() {
           <h3 style={{ fontSize: "0.9375rem", marginBottom: "0.875rem" }}>📷 Photo</h3>
           <div style={{ borderRadius: 10, overflow: "hidden" }}>
             <Image
-              src={complaint.photoUrl}
+              src={complaint.photoUrl.replace(/^http:\/\//, "https://")}
               alt="Complaint photo"
               width={720}
               height={360}

@@ -417,6 +417,25 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .build();
     }
 
+    @Override
+    public ComplaintCountResponse getWardenComplaintCounts(User warden) {
+        if (warden.getHostel() == null) {
+            return ComplaintCountResponse.builder()
+                    .pending(0).assigned(0).inProgress(0).resolved(0).rejected(0).total(0)
+                    .build();
+        }
+        UUID hostelId = warden.getHostel().getId();
+        return ComplaintCountResponse.builder()
+                .pending(complaintRepository.countByHostelIdAndStatus(hostelId, Complaint.Status.PENDING))
+                .assigned(complaintRepository.countByHostelIdAndStatus(hostelId, Complaint.Status.ASSIGNED))
+                .inProgress(complaintRepository.countByHostelIdAndStatus(hostelId, Complaint.Status.IN_PROGRESS))
+                .resolved(complaintRepository.countByHostelIdAndStatus(hostelId, Complaint.Status.RESOLVED))
+                .rejected(complaintRepository.countByHostelIdAndStatus(hostelId, Complaint.Status.REJECTED))
+                .total(complaintRepository.countByHostelId(hostelId))
+                .build();
+    }
+
+
     // ─── Helpers ───
 
     private Pageable buildPageable(int page, int size, String sortBy, String order) {

@@ -16,9 +16,8 @@ export default function SuperAdminProfile() {
   const [savingPw, setSavingPw] = useState(false);
 
   useEffect(() => {
-    // SUPER_ADMIN uses /api/auth/me (same as ADMIN getProfile)
-    getProfile("ADMIN")
-      .then((d) => setForm({ name: d.name || "", phone: d.phone || "" }))
+    getProfile("SUPER_ADMIN")
+      .then((d) => setForm({ name: d.name || "", phone: d.phone?.toString() || "" }))
       .catch(() => toast.error("Failed to load profile."))
       .finally(() => setLoading(false));
   }, []);
@@ -28,9 +27,7 @@ export default function SuperAdminProfile() {
     if (!form.name.trim()) { toast.error("Name is required."); return; }
     setSaving(true);
     try {
-      // SUPER_ADMIN profile update goes through the same /api/auth/me or student path
-      // Using "STUDENT" base as fallback since SUPER_ADMIN profile update needs custom handling
-      const d = await updateProfile("STUDENT", { name: form.name.trim(), phone: form.phone || undefined });
+      const d = await updateProfile("SUPER_ADMIN", { name: form.name.trim(), phone: form.phone || undefined });
       setUser({ ...user, name: d.name });
       toast.success("Profile updated!");
     } catch {
@@ -45,7 +42,7 @@ export default function SuperAdminProfile() {
     if (pwForm.password !== pwForm.confirm) { toast.error("Passwords don't match."); return; }
     setSavingPw(true);
     try {
-      await updateProfile("STUDENT", { oldPassword: pwForm.oldPassword, password: pwForm.password });
+      await updateProfile("SUPER_ADMIN", { oldPassword: pwForm.oldPassword, password: pwForm.password });
       setPwForm({ oldPassword: "", password: "", confirm: "" });
       toast.success("Password changed successfully!");
     } catch (err) {

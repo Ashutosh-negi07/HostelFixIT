@@ -2,17 +2,21 @@ import axios from "axios";
 import { getToken, clearAuth } from "@/lib/auth";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
-  timeout: 10000,
+  baseURL: "",          // use relative URLs — Next.js rewrites() proxy forwards to Spring Boot
+  timeout: 60000,
   headers: { "Content-Type": "application/json" },
 });
 
 // ── Request interceptor ─────────────────────────────────
 // Attach JWT Bearer token to every request
+// For FormData uploads, delete Content-Type so the browser sets multipart/form-data with boundary
 api.interceptors.request.use((config) => {
   const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
   }
   return config;
 });

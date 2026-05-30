@@ -95,7 +95,7 @@ export default function UserManagementTable({ actorRole, targetRole, canCreate =
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "3rem" }}><LoadingSpinner size="lg" /></div>
       ) : users.length === 0 ? (
-        <EmptyState icon="👥" title={`No ${targetRole.toLowerCase()}s yet`} description={canCreate ? `Add a ${targetRole.toLowerCase()} to get started.` : ""} />
+        <EmptyState icon="👥" title={`No ${(targetRole || "user").toLowerCase()}s yet`} description={canCreate ? `Add a ${(targetRole || "user").toLowerCase()} to get started.` : ""} />
       ) : (
         <div className="table-wrapper">
           <table>

@@ -27,4 +27,7 @@ public class DashboardStatsResponse {
 
     private Map<String, Long> complaintsByStatus;
     private Map<String, Long> usersByRole;
+    private Map<String, Long> complaintsByCategory;
+    private Map<String, Long> complaintsByHostel;
 }
+

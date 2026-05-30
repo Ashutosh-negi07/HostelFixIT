@@ -8,7 +8,7 @@ export default function LoadingSpinner({ size = "md", className = "" }) {
         display: "inline-block",
         width: px,
         height: px,
-        border: `2px solid rgba(99,102,241,0.2)`,
+        border: `2px solid rgba(14,165,233,0.18)`,
         borderTopColor: "var(--accent-primary)",
         borderRadius: "50%",
         animation: "spin 0.7s linear infinite",

@@ -6,6 +6,7 @@ import com.HoCom.backend.dto.UpdateHostelRequest;
 import com.HoCom.backend.models.Hostel;
 import com.HoCom.backend.models.User;
 import com.HoCom.backend.models.User.Role;
+import com.HoCom.backend.repositories.ComplaintRepository;
 import com.HoCom.backend.repositories.HostelRepository;
 import com.HoCom.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class HostelServiceImpl implements HostelService {
 
     private final HostelRepository hostelRepository;
     private final UserRepository userRepository;
+    private final ComplaintRepository complaintRepository;
 
     @Override
     public HostelResponse createHostel(CreateHostelRequest request, User createdBy) {
@@ -109,11 +111,21 @@ public class HostelServiceImpl implements HostelService {
     }
 
     private HostelResponse mapToResponse(Hostel h) {
+        UUID hostelId = h.getId();
+        long totalStudents  = userRepository.countByHostelIdAndRole(hostelId, Role.STUDENT);
+        long totalWorkers   = userRepository.countByHostelIdAndRole(hostelId, Role.WORKER);
+        long totalComplaints = complaintRepository.countByHostelId(hostelId);
+
         return HostelResponse.builder()
-                .id(h.getId())
+                .id(hostelId)
                 .name(h.getName())
                 .address(h.getAddress())
+                .adminId(h.getAdmin() != null ? h.getAdmin().getId() : null)
+                .adminName(h.getAdmin() != null ? h.getAdmin().getName() : null)
                 .createdAt(h.getCreatedAt())
+                .totalStudents(totalStudents)
+                .totalWorkers(totalWorkers)
+                .totalComplaints(totalComplaints)
                 .build();
     }
 }

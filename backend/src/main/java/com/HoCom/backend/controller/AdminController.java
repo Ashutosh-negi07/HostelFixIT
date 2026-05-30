@@ -38,6 +38,28 @@ public class AdminController {
     private final ComplaintStatusHistoryRepository statusHistoryRepository;
 
     // ═══════════════════════════════════════════
+    //  PROFILE
+    // ═══════════════════════════════════════════
+
+    @GetMapping("/profile")
+    public ResponseEntity<UserResponse> getProfile(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(userService.getUserById(currentUser.getId()));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<UserResponse> updateProfile(@Valid @RequestBody UpdateUserRequest request,
+                                                      @AuthenticationPrincipal User currentUser) {
+        // Admins can only update their own name, phone, password — not role/hostel/isActive
+        UpdateUserRequest safeRequest = UpdateUserRequest.builder()
+                .name(request.getName())
+                .phone(request.getPhone())
+                .oldPassword(request.getOldPassword())
+                .password(request.getPassword())
+                .build();
+        return ResponseEntity.ok(userService.updateUser(currentUser.getId(), safeRequest, currentUser));
+    }
+
+    // ═══════════════════════════════════════════
     //  USER MANAGEMENT
     // ═══════════════════════════════════════════
 
@@ -48,24 +70,41 @@ public class AdminController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
     @GetMapping("/users")
     public ResponseEntity<PagedResponse<UserResponse>> getAllUsers(
+            @AuthenticationPrincipal User currentUser,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(userService.getAllUsers(page, size));
+        // ADMIN sees only users in their own hostels (no ADMIN/SUPER_ADMIN accounts)
+        List<UUID> hostelIds = hostelService.getScopedHostelIds(currentUser);
+        return ResponseEntity.ok(userService.getScopedUsers(hostelIds, page, size));
     }
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable UUID userId) {
-        return ResponseEntity.ok(userService.getUserById(userId));
+    public ResponseEntity<UserResponse> getUserById(@PathVariable UUID userId,
+                                                    @AuthenticationPrincipal User currentUser) {
+        UserResponse user = userService.getUserById(userId);
+        // ADMIN can only view users in their own hostels
+        List<UUID> hostelIds = hostelService.getScopedHostelIds(currentUser);
+        if (user.getHostelId() == null || !hostelIds.contains(user.getHostelId())) {
+            throw new RuntimeException("You do not have permission to view this user");
+        }
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping("/users/role/{role}")
     public ResponseEntity<PagedResponse<UserResponse>> getUsersByRole(
             @PathVariable Role role,
+            @AuthenticationPrincipal User currentUser,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(userService.getUsersByRole(role, page, size));
+        // ADMIN cannot query ADMIN or SUPER_ADMIN accounts
+        if (role == Role.ADMIN || role == Role.SUPER_ADMIN) {
+            throw new RuntimeException("Admins cannot query ADMIN or SUPER_ADMIN accounts");
+        }
+        List<UUID> hostelIds = hostelService.getScopedHostelIds(currentUser);
+        return ResponseEntity.ok(userService.getScopedUsersByRole(hostelIds, role, page, size));
     }
 
     @PutMapping("/users/{userId}")

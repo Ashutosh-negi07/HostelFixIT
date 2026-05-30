@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.HoCom.backend.dto.PagedResponse;
 import com.HoCom.backend.dto.UpdateUserRequest;
@@ -14,9 +15,12 @@ import com.HoCom.backend.dto.UserResponse;
 import com.HoCom.backend.models.Hostel;
 import com.HoCom.backend.models.User;
 import com.HoCom.backend.models.User.Role;
+import com.HoCom.backend.repositories.ComplaintRepository;
 import com.HoCom.backend.repositories.HostelRepository;
+import com.HoCom.backend.repositories.NotificationRepository;
 import com.HoCom.backend.repositories.UserRepository;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -27,6 +31,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final HostelRepository hostelRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ComplaintRepository complaintRepository;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public UserResponse getUserById(UUID userId) {
@@ -47,6 +53,24 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<User> users = userRepository.findByRole(role, pageable);
         return toPagedResponse(users);
+    }
+
+    @Override
+    public PagedResponse<UserResponse> getScopedUsers(List<UUID> hostelIds, int page, int size) {
+        if (hostelIds == null || hostelIds.isEmpty()) {
+            return emptyPagedResponse(page, size);
+        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return toPagedResponse(userRepository.findByHostelIdIn(hostelIds, pageable));
+    }
+
+    @Override
+    public PagedResponse<UserResponse> getScopedUsersByRole(List<UUID> hostelIds, Role role, int page, int size) {
+        if (hostelIds == null || hostelIds.isEmpty()) {
+            return emptyPagedResponse(page, size);
+        }
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return toPagedResponse(userRepository.findByHostelIdInAndRole(hostelIds, role, pageable));
     }
 
     @Override
@@ -95,11 +119,26 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(UUID userId, User currentUser) {
         User target = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         validatePermission(currentUser, target);
+
+        // Block hard-delete if the user has complaint records — complaint history
+        // must be preserved for audit purposes. Use deactivate (toggle-active) instead.
+        long complaintCount = complaintRepository.countByStudentId(target.getId());
+        if (complaintCount > 0) {
+            throw new RuntimeException(
+                    "Cannot delete user with " + complaintCount + " existing complaint(s). "
+                    + "Deactivate the user account instead to preserve complaint history."
+            );
+        }
+
+        // Clean up notifications before deleting the user (FK: notifications.user_id)
+        notificationRepository.deleteByRecipientId(target.getId());
+
         userRepository.delete(target);
     }
 
@@ -185,6 +224,17 @@ public class UserServiceImpl implements UserService {
                 .totalElements(pageResult.getTotalElements())
                 .totalPages(pageResult.getTotalPages())
                 .last(pageResult.isLast())
+                .build();
+    }
+
+    private PagedResponse<UserResponse> emptyPagedResponse(int page, int size) {
+        return PagedResponse.<UserResponse>builder()
+                .content(List.of())
+                .page(page)
+                .size(size)
+                .totalElements(0)
+                .totalPages(0)
+                .last(true)
                 .build();
     }
 }

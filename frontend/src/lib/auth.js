@@ -52,11 +52,11 @@ export function getInitials(name = "") {
 
 /** Role colour for sidebar accent */
 export const ROLE_COLORS = {
-  STUDENT:     "#6366f1",
-  WARDEN:      "#8b5cf6",
+  STUDENT:     "#0ea5e9",
+  WARDEN:      "#0284c7",
   WORKER:      "#06b6d4",
   ADMIN:       "#f59e0b",
-  SUPER_ADMIN: "#e11d48",
+  SUPER_ADMIN: "#0369a1",
 };
 
 export const ROLE_LABELS = {

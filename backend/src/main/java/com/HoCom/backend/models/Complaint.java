@@ -23,7 +23,7 @@ public class Complaint {
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "assigned_worker_id")
     private User assignedWorker;
 
@@ -51,10 +51,10 @@ public class Complaint {
     @Builder.Default
     private Priority priority = Priority.NORMAL;
 
-    // Escalation feature — reserved for future use
-    // @Column(nullable = false)
-    // @Builder.Default
-    // private Integer escalationCount = 0;
+    // Escalation feature
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer escalationCount = 0;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

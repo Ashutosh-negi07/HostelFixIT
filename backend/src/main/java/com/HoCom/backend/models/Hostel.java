@@ -29,7 +29,7 @@ public class Hostel {
      * The ADMIN who owns this hostel.
      * NULL = unassigned (visible only to SUPER_ADMIN).
      */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "admin_id")
     private User admin;
 

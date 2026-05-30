@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+
 import UserManagementTable from "@/components/shared/UserManagementTable";
 
 export default function WardenStudents() {
@@ -7,7 +7,7 @@ export default function WardenStudents() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Students 🎓</h1>
+          <h1 className="page-title">Students</h1>
           <p className="page-subtitle">Manage students in your hostel.</p>
         </div>
       </div>

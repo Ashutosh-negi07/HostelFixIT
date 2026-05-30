@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.HoCom.backend.dto.UpdateUserRequest;
+
 /**
  * SUPER_ADMIN endpoints — company-level platform management.
  * All routes under /api/superadmin/** require SUPER_ADMIN role (enforced by SecurityConfig).
@@ -175,6 +177,23 @@ public class SuperAdminController {
                 "totalHostels",  totalHostels,
                 "totalUsers",    totalAdmins + totalWardens + totalWorkers + totalStudents
         ));
+    }
+
+    // ═══════════════════════════════════════════
+    //  SUPER_ADMIN PROFILE
+    // ═══════════════════════════════════════════
+
+    /** GET /api/superadmin/me — returns the SUPER_ADMIN's own profile */
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getMyProfile(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(mapUserToResponse(currentUser));
+    }
+
+    /** PUT /api/superadmin/me — update SUPER_ADMIN's own name / phone / password */
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateMyProfile(@Valid @RequestBody UpdateUserRequest request,
+                                                        @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(userService.updateUser(currentUser.getId(), request, currentUser));
     }
 
     // ─── Helpers ───

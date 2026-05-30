@@ -50,19 +50,35 @@ export async function toggleUserActive(id) {
   return res.data;
 }
 
-/** GET/PUT profile */
+/** GET profile — role-scoped */
 export async function getProfile(role) {
-  const base = { STUDENT: "/api/student", WARDEN: "/api/warden", WORKER: "/api/worker", ADMIN: "/api/auth" }[role];
-  if (role === "ADMIN") {
-    const res = await api.get("/api/auth/me");
+  if (role === "SUPER_ADMIN") {
+    const res = await api.get("/api/superadmin/me");
     return res.data;
   }
+  const base = {
+    ADMIN:   "/api/admin",
+    STUDENT: "/api/student",
+    WARDEN:  "/api/warden",
+    WORKER:  "/api/worker",
+  }[role];
   const res = await api.get(`${base}/profile`);
   return res.data;
 }
 
+/** PUT profile — role-scoped */
 export async function updateProfile(role, data) {
-  const base = { STUDENT: "/api/student", WARDEN: "/api/warden", WORKER: "/api/worker" }[role] || "/api/student";
+  if (role === "SUPER_ADMIN") {
+    const res = await api.put("/api/superadmin/me", data);
+    return res.data;
+  }
+  const base = {
+    ADMIN:   "/api/admin",
+    STUDENT: "/api/student",
+    WARDEN:  "/api/warden",
+    WORKER:  "/api/worker",
+  }[role] || "/api/student";
   const res = await api.put(`${base}/profile`, data);
   return res.data;
 }
+

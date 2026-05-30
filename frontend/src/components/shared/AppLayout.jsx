@@ -11,9 +11,22 @@ export default function AppLayout({ children }) {
   // Hydrate user from localStorage on mount
   useEffect(() => { init(); }, [init]);
 
+  // Close sidebar when route changes on mobile
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <div className="app-shell">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar open={sidebarOpen} onClose={closeSidebar} />
+
+      {/* Tap-outside overlay — only visible on mobile when sidebar is open */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={closeSidebar}
+          aria-hidden="true"
+        />
+      )}
+
       <div className="main-area">
         <Navbar onMenuToggle={() => setSidebarOpen((v) => !v)} />
         <main className="page-content animate-fade-in">
@@ -21,11 +34,9 @@ export default function AppLayout({ children }) {
         </main>
       </div>
 
-      {/* Mobile sidebar overlay style inject */}
       <style>{`
         @media (max-width: 768px) {
           #hamburger-btn { display: flex !important; }
-          .sidebar-overlay { display: block !important; }
         }
       `}</style>
     </div>

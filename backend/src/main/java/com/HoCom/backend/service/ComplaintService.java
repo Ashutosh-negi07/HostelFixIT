@@ -46,4 +46,6 @@ public interface ComplaintService {
     ComplaintCountResponse getStudentComplaintCounts(User student);
 
     ComplaintCountResponse getWorkerComplaintCounts(User worker);
+
+    ComplaintCountResponse getWardenComplaintCounts(User warden);
 }

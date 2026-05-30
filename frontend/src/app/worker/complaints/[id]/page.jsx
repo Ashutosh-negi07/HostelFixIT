@@ -101,7 +101,7 @@ export default function WorkerComplaintDetail() {
       {complaint.photoUrl && (
         <div className="card-elevated" style={{ marginBottom: "1.25rem" }}>
           <h3 style={{ fontSize: "0.9375rem", marginBottom: "0.875rem" }}>📷 Photo</h3>
-          <Image src={complaint.photoUrl} alt="Complaint" width={720} height={360} style={{ borderRadius: 10, objectFit: "cover", width: "100%", height: "auto", maxHeight: 360 }} />
+          <Image src={complaint.photoUrl.replace(/^http:\/\//, "https://")} alt="Complaint" width={720} height={360} style={{ borderRadius: 10, objectFit: "cover", width: "100%", height: "auto", maxHeight: 360 }} />
         </div>
       )}
 

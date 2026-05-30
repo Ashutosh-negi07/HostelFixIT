@@ -6,7 +6,7 @@ export default function WardenWorkers() {
     <div className="animate-fade-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Workers 👷</h1>
+          <h1 className="page-title">Workers</h1>
           <p className="page-subtitle">Manage maintenance workers in your hostel.</p>
         </div>
       </div>

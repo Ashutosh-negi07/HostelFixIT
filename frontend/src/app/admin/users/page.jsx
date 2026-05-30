@@ -7,7 +7,6 @@ const ROLES = [
   { label: "Students",   value: "STUDENT" },
   { label: "Wardens",    value: "WARDEN" },
   { label: "Workers",    value: "WORKER" },
-  { label: "Admins",     value: "ADMIN" },
 ];
 
 export default function AdminUsers() {
@@ -16,7 +15,7 @@ export default function AdminUsers() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <div><h1 className="page-title">User Management 👥</h1><p className="page-subtitle">Manage all users in the system.</p></div>
+        <div><h1 className="page-title">User Management 👥</h1><p className="page-subtitle">Manage wardens, students and workers across your hostels.</p></div>
       </div>
 
       <div className="tabs" style={{ marginBottom: "1.5rem" }}>

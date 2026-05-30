@@ -16,17 +16,13 @@ export async function getComplaint(role, id) {
 
 /** POST /api/student/complaints (multipart) */
 export async function createComplaint(formData) {
-  const res = await api.post("/api/student/complaints", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const res = await api.post("/api/student/complaints", formData);
   return res.data;
 }
 
 /** PUT /api/student/complaints/{id} (multipart) */
 export async function updateComplaint(id, formData) {
-  const res = await api.put(`/api/student/complaints/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const res = await api.put(`/api/student/complaints/${id}`, formData);
   return res.data;
 }
 

@@ -77,9 +77,13 @@ public class WardenController {
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal User currentUser) {
         if (currentUser.getHostel() == null) {
-            throw new RuntimeException("Warden is not assigned to a hostel");
+            // Warden not yet assigned to a hostel — return empty list, not an error
+            return ResponseEntity.ok(PagedResponse.<UserResponse>builder()
+                    .content(java.util.List.of()).page(page).size(size)
+                    .totalElements(0).totalPages(0).last(true).build());
         }
-        return ResponseEntity.ok(userService.getUsersByHostelAndRole(currentUser.getHostel().getId(), Role.STUDENT, page, size));
+        return ResponseEntity.ok(userService.getUsersByHostelAndRole(
+                currentUser.getHostel().getId(), Role.STUDENT, page, size));
     }
 
     @GetMapping("/workers")
@@ -88,9 +92,18 @@ public class WardenController {
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal User currentUser) {
         if (currentUser.getHostel() == null) {
-            throw new RuntimeException("Warden is not assigned to a hostel");
+            // Warden not yet assigned to a hostel — return empty list, not an error
+            return ResponseEntity.ok(PagedResponse.<UserResponse>builder()
+                    .content(java.util.List.of()).page(page).size(size)
+                    .totalElements(0).totalPages(0).last(true).build());
         }
-        return ResponseEntity.ok(userService.getUsersByHostelAndRole(currentUser.getHostel().getId(), Role.WORKER, page, size));
+        return ResponseEntity.ok(userService.getUsersByHostelAndRole(
+                currentUser.getHostel().getId(), Role.WORKER, page, size));
+    }
+
+    @GetMapping("/complaints/count")
+    public ResponseEntity<ComplaintCountResponse> getComplaintCounts(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(complaintService.getWardenComplaintCounts(currentUser));
     }
 
     @GetMapping("/users/{userId}")
