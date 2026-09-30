@@ -137,7 +137,7 @@ export default function SuperAdminDashboard() {
 
           {/* Charts row */}
           {(userPieData.length > 0 || hostelBarData.length > 0) && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginBottom: "2rem" }}>
+            <div className="grid-2" style={{ marginBottom: "2rem" }}>
               {/* Donut: user role distribution */}
               {userPieData.length > 0 && (
                 <div className="card-elevated">

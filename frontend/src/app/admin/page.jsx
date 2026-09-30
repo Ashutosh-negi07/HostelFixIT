@@ -110,7 +110,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Charts row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginBottom: "2rem" }}>
+          <div className="grid-2" style={{ marginBottom: "2rem" }}>
             {/* Pie: complaint status breakdown */}
             {pieData.length > 0 && (
               <div className="card-elevated">
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
                 <div style={{ height: 280 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`} labelLine={false}>
                         {pieData.map((entry, i) => (
                           <Cell key={i} fill={entry.fill} />
                         ))}
@@ -142,10 +142,10 @@ export default function AdminDashboard() {
                 <h3 style={{ fontSize: "0.9375rem", marginBottom: "1.25rem", color: "var(--text-primary)" }}>Top Categories</h3>
                 <div style={{ height: 280 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={categoryData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                    <BarChart data={categoryData} layout="vertical" margin={{ left: 0, right: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(14,165,233,0.08)" horizontal={false} />
                       <XAxis type="number" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis type="category" dataKey="name" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
+                      <YAxis type="category" dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} width={70} />
                       <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                       <Bar dataKey="complaints" radius={[0, 4, 4, 0]}>
                         {categoryData.map((entry, i) => (

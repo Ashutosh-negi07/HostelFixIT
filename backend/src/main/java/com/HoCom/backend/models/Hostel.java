@@ -25,7 +25,7 @@ public class Hostel {
     @Column
     private String address;
 
-    /**
+    /**eere
      * The ADMIN who owns this hostel.
      * NULL = unassigned (visible only to SUPER_ADMIN).
      */

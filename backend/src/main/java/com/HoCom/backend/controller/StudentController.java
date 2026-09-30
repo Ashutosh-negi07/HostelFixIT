@@ -11,7 +11,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.HoCom.backend.dto.*;
 import com.HoCom.backend.models.Complaint;
+import com.HoCom.backend.models.ComplaintStatusHistory;
 import com.HoCom.backend.models.User;
+import com.HoCom.backend.repositories.ComplaintStatusHistoryRepository;
 import com.HoCom.backend.service.*;
 
 import java.util.List;
@@ -29,6 +31,7 @@ public class StudentController {
     private final CategoryService categoryService;
     private final UserService userService;
     private final HostelService hostelService;
+    private final ComplaintStatusHistoryRepository statusHistoryRepository;
 
     // ═══════════════════════════════════════════
     //  PROFILE
@@ -113,6 +116,23 @@ public class StudentController {
                                                           @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(complaintService.getComplaintById(complaintId, currentUser));
     }
+
+        @GetMapping("/complaints/{complaintId}/history")
+        public ResponseEntity<List<ComplaintStatusHistoryResponse>> getComplaintHistory(
+            @PathVariable UUID complaintId, @AuthenticationPrincipal User currentUser) {
+        complaintService.getComplaintById(complaintId, currentUser);
+        List<ComplaintStatusHistoryResponse> response = statusHistoryRepository
+            .findByComplaintIdOrderByChangedAtAsc(complaintId).stream()
+            .map(history -> ComplaintStatusHistoryResponse.builder()
+                .id(history.getId())
+                .oldStatus(history.getOldStatus())
+                .newStatus(history.getNewStatus())
+                .changedByName(history.getChangedBy() != null ? history.getChangedBy().getName() : "System")
+                .changedAt(history.getChangedAt())
+                .build())
+            .toList();
+        return ResponseEntity.ok(response);
+        }
 
     @PutMapping(value = "/complaints/{complaintId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ComplaintResponse> updateComplaint(

@@ -115,7 +115,6 @@ export default function Navbar({ onMenuToggle }) {
         className="btn btn-ghost btn-icon"
         onClick={onMenuToggle}
         aria-label="Toggle menu"
-        style={{ display: "none" }}
         id="hamburger-btn"
       >
         <MenuIcon />
@@ -215,14 +214,14 @@ export default function Navbar({ onMenuToggle }) {
           <div className="avatar" style={{ width: 30, height: 30, fontSize: "0.8rem" }}>
             {(user?.name || "U")[0].toUpperCase()}
           </div>
-          <span style={{ fontSize: "0.875rem", color: "var(--text-secondary)", fontWeight: 500 }}>
+          <span className="topbar-username" style={{ fontSize: "0.875rem", color: "var(--text-secondary)", fontWeight: 500 }}>
             {user?.name?.split(" ")[0] || "User"}
           </span>
           <span style={{ color: "var(--text-muted)" }}><ChevronIcon /></span>
         </button>
 
         {profileOpen && (
-          <div className="notif-dropdown" style={{ width: 200, padding: "0.5rem" }}>
+          <div className="notif-dropdown profile-dropdown" style={{ width: 200, padding: "0.5rem" }}>
             <Link
               href={`/${role.toLowerCase()}/profile`}
               className="nav-item"

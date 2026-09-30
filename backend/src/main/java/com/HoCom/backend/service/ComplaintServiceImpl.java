@@ -37,6 +37,7 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final CloudinaryService cloudinaryService;
 
     @Override
+    @Transactional
     public ComplaintResponse createComplaint(CreateComplaintRequest request, User student) {
         if (student.getRole() != Role.STUDENT) {
             throw new RuntimeException("Only students can create complaints");
@@ -58,6 +59,7 @@ public class ComplaintServiceImpl implements ComplaintService {
                 .build();
 
         Complaint saved = complaintRepository.save(complaint);
+        recordStatusChange(saved, null, Complaint.Status.PENDING, student);
 
         // Notify wardens of this hostel about the new complaint
         userRepository.findByHostelIdAndRole(saved.getHostel().getId(), Role.WARDEN,
@@ -216,6 +218,10 @@ public class ComplaintServiceImpl implements ComplaintService {
             throw new RuntimeException("Assigned user must have WORKER role");
         }
 
+        if (complaint.getStatus() != Complaint.Status.PENDING) {
+            throw new RuntimeException("Only PENDING complaints can be assigned");
+        }
+
         Complaint.Status oldStatus = complaint.getStatus();
         complaint.setAssignedWorker(worker);
         complaint.setStatus(Complaint.Status.ASSIGNED);
@@ -249,9 +255,8 @@ public class ComplaintServiceImpl implements ComplaintService {
             throw new RuntimeException("This complaint is not assigned to you");
         }
 
-        if (complaint.getStatus() == Complaint.Status.RESOLVED
-                || complaint.getStatus() == Complaint.Status.REJECTED) {
-            throw new RuntimeException("Complaint is already " + complaint.getStatus());
+        if (complaint.getStatus() != Complaint.Status.IN_PROGRESS) {
+            throw new RuntimeException("Only IN_PROGRESS complaints can be resolved");
         }
 
         Complaint.Status oldStatus = complaint.getStatus();
@@ -311,10 +316,15 @@ public class ComplaintServiceImpl implements ComplaintService {
             throw new RuntimeException("You can only manage complaints in your hostel");
         }
 
+        if (complaint.getStatus() != Complaint.Status.PENDING) {
+            throw new RuntimeException("Only PENDING complaints can be rejected");
+        }
+
         Complaint.Status oldStatus = complaint.getStatus();
         complaint.setStatus(Complaint.Status.REJECTED);
 
         Complaint saved = complaintRepository.save(complaint);
+        recordStatusChange(saved, oldStatus, Complaint.Status.ASSIGNED, warden);
         recordStatusChange(saved, oldStatus, Complaint.Status.REJECTED, warden);
 
         // Notify student that their complaint was rejected

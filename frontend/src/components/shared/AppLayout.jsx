@@ -11,6 +11,16 @@ export default function AppLayout({ children }) {
   // Hydrate user from localStorage on mount
   useEffect(() => { init(); }, [init]);
 
+  // Lock body scroll on mobile when sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add("sidebar-open");
+    } else {
+      document.body.classList.remove("sidebar-open");
+    }
+    return () => document.body.classList.remove("sidebar-open");
+  }, [sidebarOpen]);
+
   // Close sidebar when route changes on mobile
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -18,27 +28,12 @@ export default function AppLayout({ children }) {
     <div className="app-shell">
       <Sidebar open={sidebarOpen} onClose={closeSidebar} />
 
-      {/* Tap-outside overlay — only visible on mobile when sidebar is open */}
-      {sidebarOpen && (
-        <div
-          className="sidebar-overlay"
-          onClick={closeSidebar}
-          aria-hidden="true"
-        />
-      )}
-
       <div className="main-area">
         <Navbar onMenuToggle={() => setSidebarOpen((v) => !v)} />
         <main className="page-content animate-fade-in">
           {children}
         </main>
       </div>
-
-      <style>{`
-        @media (max-width: 768px) {
-          #hamburger-btn { display: flex !important; }
-        }
-      `}</style>
     </div>
   );
 }

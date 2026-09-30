@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { getComplaint, cancelComplaint } from "@/lib/api/complaints.api";
+import { getComplaint, cancelComplaint, getComplaintHistory } from "@/lib/api/complaints.api";
 import { getFeedback, submitFeedback } from "@/lib/api/feedback.api";
 import StatusBadge from "@/components/shared/StatusBadge";
 import PriorityBadge from "@/components/shared/PriorityBadge";
@@ -26,6 +26,7 @@ export default function StudentComplaintDetail() {
   const router = useRouter();
   const [complaint, setComplaint] = useState(null);
   const [feedback, setFeedback]   = useState(null);
+  const [history, setHistory]     = useState([]);
   const [loading, setLoading]     = useState(true);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling]       = useState(false);
@@ -36,8 +37,12 @@ export default function StudentComplaintDetail() {
   useEffect(() => {
     async function load() {
       try {
-        const [c] = await Promise.all([getComplaint("STUDENT", id)]);
+        const [c, h] = await Promise.all([
+          getComplaint("STUDENT", id),
+          getComplaintHistory("STUDENT", id),
+        ]);
         setComplaint(c);
+        setHistory(h);
         // Try fetching feedback (may 404 if none yet)
         try {
           const fb = await getFeedback("STUDENT", id);
@@ -132,6 +137,22 @@ export default function StudentComplaintDetail() {
           {complaint.assignedWorkerName && <span>👷 Worker: {complaint.assignedWorkerName}</span>}
         </div>
       </div>
+
+      {history.length > 0 && (
+        <div className="card-elevated" style={{ marginBottom: "1.25rem" }}>
+          <h3 style={{ fontSize: "0.9375rem", marginBottom: "1rem" }}>Status History</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {history.map((entry) => (
+              <div key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: "1rem", fontSize: "0.8125rem" }}>
+                <span style={{ color: "var(--text-primary)" }}>
+                  {entry.oldStatus ? `${entry.oldStatus.replace("_", " ")} → ` : ""}{entry.newStatus.replace("_", " ")}
+                </span>
+                <span style={{ color: "var(--text-muted)", textAlign: "right" }}>{entry.changedByName} · {fmt(entry.changedAt)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Photo */}
       {complaint.photoUrl && (
