@@ -69,6 +69,12 @@
 
   /* Transition */
   --transition: all 0.2s ease;
+
+  /* Safe area insets (PWA / notch support) */
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
 }
 
 /* ══════════════════════════════════════════════
@@ -83,6 +89,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
 }
 
 body {
@@ -92,7 +100,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
   overflow-x: hidden;
+  /* PWA: prevent rubber-band scroll from revealing background */
+  overscroll-behavior: none;
 }
 
 /* ══════════════════════════════════════════════
@@ -374,6 +385,8 @@ textarea.form-input {
   display: flex;
   align-items: center;
   padding: 0 1.5rem;
+  padding-left: calc(1.5rem + var(--safe-left));
+  padding-right: calc(1.5rem + var(--safe-right));
   position: sticky;
   top: 0;
   z-index: 30;
@@ -384,6 +397,7 @@ textarea.form-input {
 .page-content {
   flex: 1;
   padding: 1.75rem;
+  padding-bottom: calc(1.75rem + var(--safe-bottom));
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
@@ -486,8 +500,8 @@ textarea.form-input {
 
 .stat-grid {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 }
 
 .stat-card {
@@ -712,6 +726,7 @@ tbody tr.clickable:hover { background: #e0f2fe; cursor: pointer; }
   top: calc(100% + 10px);
   right: 0;
   width: 360px;
+  max-width: calc(100vw - 2rem);
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1077,6 +1092,8 @@ tbody tr.clickable:hover { background: #e0f2fe; cursor: pointer; }
   .sidebar {
     transform: translateX(-100%);
     z-index: 200;
+    /* Account for safe area on left (landscape) */
+    padding-left: var(--safe-left);
   }
   .sidebar.open {
     transform: translateX(0);
@@ -1087,41 +1104,118 @@ tbody tr.clickable:hover { background: #e0f2fe; cursor: pointer; }
   }
   .page-content {
     padding: 1rem;
+    padding-bottom: calc(1.25rem + var(--safe-bottom));
   }
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.625rem;
+  }
+  .stat-card {
+    padding: 1rem;
+  }
+  .stat-card-value {
+    font-size: 1.5rem;
   }
   /* Sidebar overlay — tap outside to close */
   .sidebar-overlay {
-    display: block;
+    display: block !important;
     position: fixed;
     inset: 0;
     background: rgba(15, 23, 42, 0.35);
     z-index: 190;
     backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
   }
-  /* Notification dropdown full-width on mobile */
+  /* Notification dropdown — anchor to right edge of screen */
   .notif-dropdown {
-    width: calc(100vw - 2rem);
-    right: -0.5rem;
+    position: fixed;
+    top: 68px;
+    left: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+    max-width: none;
+    border-radius: 14px;
+  }
+  /* Profile dropdown — anchor to right */
+  .profile-dropdown {
+    right: 0;
+    left: auto;
   }
   /* Page header stacks on mobile */
   .page-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  .page-title { font-size: 1.35rem; }
-  /* Modal fits screen */
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .page-title { font-size: 1.25rem; }
+  .page-subtitle { font-size: 0.8125rem; }
+  /* Modal — nearly full screen on mobile */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
   .modal {
     padding: 1.25rem;
+    padding-bottom: calc(1.25rem + var(--safe-bottom));
     margin: 0;
-    border-radius: 16px;
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
   }
-  /* Tables: hide less-important columns */
+  /* Tables: horizontal scroll + hide less-important columns */
   .table-wrapper {
-    border-radius: 8px;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
   }
-  .table-hide-mobile { display: none; }
+  table {
+    font-size: 0.8125rem;
+  }
+  th, td {
+    padding: 0.75rem 0.75rem;
+  }
+  .table-hide-mobile { display: none !important; }
+  /* Filter bar wraps nicely */
+  .filter-bar {
+    gap: 0.5rem;
+  }
+  .filter-select {
+    min-width: unset;
+    flex: 1;
+    font-size: 0.8125rem;
+  }
+  /* Topbar height accounts for status bar */
+  .topbar {
+    padding-top: var(--safe-top);
+    height: calc(60px + var(--safe-top));
+  }
+  /* Hide username text in topbar on mobile, keep avatar */
+  .topbar-username {
+    display: none;
+  }
+  /* Tabs scroll horizontally */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  /* Grid always single column on phones */
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  /* Card padding */
+  .card {
+    padding: 1rem;
+  }
+  .card-elevated {
+    padding: 1.125rem;
+  }
 }
 
 /* ══════════════════════════════════════════════
@@ -1200,11 +1294,33 @@ tbody tr.clickable:hover { background: #e0f2fe; cursor: pointer; }
 .grid-4 { grid-template-columns: repeat(4, 1fr); gap: 1rem; }
 
 @media (max-width: 768px) {
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; gap: 0.75rem; }
 }
 @media (max-width: 1024px) {
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Extra small screens (≤ 390px — iPhone SE, older Androids) */
+@media (max-width: 390px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  .stat-card-value {
+    font-size: 1.25rem;
+  }
+  .page-title {
+    font-size: 1.125rem;
+  }
+  .btn {
+    font-size: 0.8125rem;
+    padding: 0.5625rem 1rem;
+  }
+  .badge {
+    font-size: 0.6875rem;
+    padding: 0.2rem 0.5rem;
+  }
 }
 
 /* dot pulse animation for active status */
@@ -1217,9 +1333,53 @@ tbody tr.clickable:hover { background: #e0f2fe; cursor: pointer; }
   display: inline-block;
 }
 
-/* Hamburger visible on mobile */
+/* Hamburger: hidden on desktop, visible on mobile */
+#hamburger-btn {
+  display: none;
+}
 @media (max-width: 768px) {
   #hamburger-btn {
     display: flex !important;
+  }
+}
+
+/* Table utilities */
+.table-show-mobile { display: none; }
+@media (max-width: 768px) {
+  .table-show-mobile { display: block !important; }
+}
+
+/* Prevent background scroll when sidebar open on mobile */
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* PWA touch improvements */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+a, button {
+  touch-action: manipulation;
+}
+
+/* Minimum touch target size for interactive elements */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+  }
+  .btn-sm {
+    min-height: 36px;
+  }
+  .nav-item {
+    min-height: 44px;
+  }
+  /* Ensure form inputs are large enough to tap */
+  .form-input {
+    font-size: 16px; /* Prevents iOS auto-zoom on focus */
+    min-height: 48px;
+  }
+  .filter-select {
+    font-size: 16px; /* Prevents iOS auto-zoom */
+    min-height: 44px;
   }
 }

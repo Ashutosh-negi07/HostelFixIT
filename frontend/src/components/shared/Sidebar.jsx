@@ -128,12 +128,11 @@ export default function Sidebar({ open, onClose }) {
 
   return (
     <>
-      {/* Mobile overlay */}
       {open && (
         <div
           onClick={onClose}
-          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.35)", zIndex: 39, display: "none" }}
           className="sidebar-overlay"
+          aria-hidden="true"
         />
       )}
 

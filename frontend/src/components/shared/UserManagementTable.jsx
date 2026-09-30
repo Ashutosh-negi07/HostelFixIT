@@ -102,10 +102,10 @@ export default function UserManagementTable({ actorRole, targetRole, canCreate =
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
+                <th className="table-hide-mobile">Email</th>
+                <th className="table-hide-mobile">Phone</th>
                 <th>Status</th>
-                <th>Joined</th>
+                <th className="table-hide-mobile">Joined</th>
                 {canCreate && <th style={{ textAlign: "right" }}>Actions</th>}
               </tr>
             </thead>
@@ -117,11 +117,14 @@ export default function UserManagementTable({ actorRole, targetRole, canCreate =
                       <div className="avatar" style={{ width: 28, height: 28, fontSize: "0.75rem" }}>
                         {(u.name || "U")[0].toUpperCase()}
                       </div>
-                      <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{u.name}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <span style={{ color: "var(--text-primary)", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{u.name}</span>
+                        <span className="table-show-mobile" style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "none" }}>{u.email}</span>
+                      </div>
                     </div>
                   </td>
-                  <td>{u.email}</td>
-                  <td>{u.phone || "—"}</td>
+                  <td className="table-hide-mobile">{u.email}</td>
+                  <td className="table-hide-mobile">{u.phone || "—"}</td>
                   <td>
                     <span style={{
                       fontSize: "0.75rem", fontWeight: 600, padding: "0.2rem 0.5rem", borderRadius: 999,
@@ -131,7 +134,7 @@ export default function UserManagementTable({ actorRole, targetRole, canCreate =
                       {u.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-IN") : "—"}</td>
+                  <td className="table-hide-mobile">{u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-IN") : "—"}</td>
                   {canCreate && (
                     <td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: "flex", gap: "0.375rem", justifyContent: "flex-end" }}>

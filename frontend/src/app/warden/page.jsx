@@ -149,7 +149,7 @@ export default function WardenDashboard() {
 
           {/* Charts row */}
           {pieData.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginBottom: "2rem" }}>
+            <div className="grid-2" style={{ marginBottom: "2rem" }}>
               {/* Donut: status breakdown */}
               <div className="card-elevated">
                 <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, marginBottom: "1.25rem", color: "var(--text-primary)" }}>

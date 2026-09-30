@@ -4,8 +4,9 @@
   "description": "Hostel maintenance complaint management system",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0d14",
-  "theme_color": "#6366f1",
+  "display_override": ["standalone"],
+  "background_color": "#f0f7ff",
+  "theme_color": "#0ea5e9",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [
